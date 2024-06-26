@@ -1,5 +1,5 @@
 # FileChat
-Chat with files using LLM. Support the following document types:
+Chat with files using LLM. Supports the following document types:
 * Microsoft World (DOCX)
 * Open Document (ODT)
 * Portable Document Format (PDF)
