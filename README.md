@@ -1,4 +1,4 @@
-# FileChat
+# FileChat (WIP)
 Chat with files using LLM. Supports the following document types:
 * Microsoft World (DOCX)
 * Open Document (ODT)
