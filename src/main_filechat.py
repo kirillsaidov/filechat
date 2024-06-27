@@ -1,37 +1,32 @@
 # module main_filechat
 
 # system
-import os, sys, argparse
+import os
+import sys
+import time
+import argparse
 
 # webui
 import streamlit as st
 
-# llm
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-
 # local
+from chromadb import *
 from fileuploader import *
 
         
 if __name__ == '__main__':
-    # parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    # parser.add_argument('--device', help='[ cpu, cuda, auto ]', default='cuda', type=str)
-    # parser.add_argument('--model_type', help='[ small, base, medium, large, large-v2 ]', default='large-v2', type=str)
-    # parser.add_argument('--temperature', help='temperature used for sampling [0, 0.2, 0.4, 0.6, 0.8, 1]', default=0, type=float)
-    # parser.add_argument('--mongo_connect', help='mongo connect url', default='mongodb://dev.happydebt.kz:27017/', type=str)
-    # parser.add_argument('--mongo_db', help='mongo database name', default='gepard', type=str)
-    # parser.add_argument('--mongo_col', help='mongo collection name', default='stt_service', type=str)
-    # parser.add_argument('--mongo_query_again_s', help='queary again after N seconds (if all requests are processed)', default=30, type=float)
-    # parser.add_argument('--mongo_hardinfo_rps', help='update rate per second or update every 1/rps seconds', default=1, type=float)
-    # parser.add_argument('--max_instances', help='maximum number of instances running simultaneously in parallel threads', default=1, type=int)
-    # parser.add_argument('--tmp', help='folder for storing temporary files', default='tmp', type=str)
-    # parser.add_argument('--delete_files', help='delete audio files from minio db and temporary folder after usage', default=False, type=bool)
-    # parser.add_argument('--with_ailb', help='use AI Load Balancer to receive jobs', default=False, type=bool)
-    # parser.add_argument('--verbose', help='verbose output', default=True, type=bool)
-    # args = parser.parse_args()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--chromadb', help='path to chromadb with name', default='chroma', type=str)
+    parser.add_argument('--ollama_model', help='ollama model name', default='llama3', type=str)
+    parser.add_argument('--ollama_base_url', help='ollama url:port', default='http://localhost:11434', type=str)
+    parser.add_argument('--verbose', help='verbose output', action='store_true')
+    args = parser.parse_args()
     
     # setup
+    chromadb = args.chromadb
+    ollama_model = args.ollama_model
+    ollama_base_url = args.ollama_base_url
+    verbose = args.verbose
     supported_doctypes = ['pdf', 'docx', 'odt', 'txt']
     
     # ---
@@ -55,7 +50,10 @@ if __name__ == '__main__':
         st.markdown('''
         # Cache
         ''')
-        st.button('Clear database', use_container_width=True, on_click=lambda: None)
+        if st.button('Clear database', use_container_width=True, on_click=chromadb_clear_database):
+            widget = st.success('Database cleared!', icon='✅')
+            time.sleep(2)
+            widget.empty()
         
     # ---
     # MAIN WINDOW
@@ -82,10 +80,28 @@ if __name__ == '__main__':
         files = st.file_uploader('Upload your files', type=supported_doctypes, accept_multiple_files=True)
     
     # upload files
+    documents = []
     submitIsPressed = st.button('Submit', use_container_width=True)
     if submitIsPressed and files:
-        for file in files:
-            documents = fu_get_content(*fu_make_upload(file))
-            print(documents)
+        # upload and convert to documents
+        for file in files: documents += fu_get_content(*fu_make_upload(file))
+    
+        # process documents
+        documents = fu_split_documents(documents)
+        docs_added = chromadb_add_documents(
+            documents=documents,
+            path=chromadb,
+            model=ollama_model,
+            base_url=ollama_base_url,
+            verbose=verbose,
+        )
+        
+        # display number of documents added
+        widget = st.success(f'{docs_added} chunks added/updated!', icon='✅')
+        time.sleep(2)
+        widget.empty()
+    
+        from pprint import pprint
+        for doc in documents: pprint(doc)
 
 

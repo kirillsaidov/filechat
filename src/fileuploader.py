@@ -10,6 +10,7 @@ from odf import text as odfText
 from odf.opendocument import load as odtload
 from streamlit.runtime.uploaded_file_manager import UploadedFile
 from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 def fu_make_upload(file: UploadedFile | str) -> tuple[io.BytesIO, str, str]:
@@ -159,3 +160,53 @@ def fu_get_content_docx(file: io.BytesIO, source: str = '') -> list[Document]:
     return documents
 
 
+def fu_split_documents(documents: list[Document], chunk_size: int = 800, chunk_overlap: int = 80) -> list[Document]:
+    """Split documents into smaller chunks of specified size
+
+    Args:
+        documents (list[Document]): list of documents
+        chunk_size (int, optional): chunk size split. Defaults to 800.
+        chunk_overlap (int, optional): chunk size overlap. Defaults to 80.
+
+    Returns:
+        list[Document]: list of documents of the approximate specified size
+    """
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len,
+        is_separator_regex=False,
+    )
+    return text_splitter.split_documents(documents)
+
+
+def fu_calculate_document_ids(documents: list[Document]) -> list[Document]:
+    """Creates unique document IDs like 'source:page_num:document_id' ==> 'file.pdf:6:2'
+
+    Args:
+        documents (list[Document]): documents
+
+    Returns:
+        list[Document]: documents with unique id
+    """
+    last_page_id = None
+    current_chunk_index = 0
+    for document in documents:
+        source = document.metadata.get("source")
+        page = document.metadata.get("page")
+        current_page_id = f"{source}:{page}"
+
+        # if the page ID is the same as the last one, increment the index.
+        if current_page_id == last_page_id:
+            current_chunk_index += 1
+        else:
+            current_chunk_index = 0
+
+        # calculate the document ID.
+        document_id = f"{current_page_id}:{current_chunk_index}"
+        last_page_id = current_page_id
+
+        # add it to the page meta-data.
+        document.metadata["id"] = document_id
+
+    return documents
