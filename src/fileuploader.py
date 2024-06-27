@@ -9,6 +9,7 @@ from PyPDF2 import PdfReader
 from odf import text as odfText
 from odf.opendocument import load as odtload
 from streamlit.runtime.uploaded_file_manager import UploadedFile
+from langchain.schema import Document
 
 
 def fu_make_upload(file: UploadedFile | str) -> tuple[io.BytesIO, str, str]:
@@ -51,76 +52,110 @@ def fu_get_encoded_type(ext: str) -> str:
     else: raise Exception('Unsupported document type!')
 
 
-def fu_get_content(file: io.BytesIO, type: str) -> str:
+def fu_get_content(file: io.BytesIO, type: str, source: str = '') -> list[Document]:
     """Reads file contents based in its text
 
     Args:
         file (io.BytesIO): uploaded file object
+        type (str): document type
+        source (str, optional): filename. Defaults to ''.
 
     Returns:
-        str: contents
+        list[Document]: list of documents(page_content, metadata={'source', 'page'})
     """
-    if type == 'application/pdf': return fu_get_content_pdf(file)
-    elif type == 'application/vnd.oasis.opendocument.text': return fu_get_content_odt(file)
-    elif type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return fu_get_content_docx(file)
-    elif type == 'text/plain': return fu_get_content_txt(file)
+    if type == 'application/pdf': return fu_get_content_pdf(file, source)
+    elif type == 'application/vnd.oasis.opendocument.text': return fu_get_content_odt(file, source)
+    elif type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': return fu_get_content_docx(file, source)
+    elif type == 'text/plain': return fu_get_content_txt(file, source)
     else: raise Exception('Unsupported document type!')
 
 
-def fu_get_content_txt(file: io.BytesIO) -> str:
+def fu_get_content_txt(file: io.BytesIO, source: str = '') -> list[Document]:
     """Reads TXT file contents
 
     Args:
         file (io.BytesIO): uploaded file object
+        source (str, optional): filename. Defaults to ''.
 
     Returns:
-        str: contents
+        list[Document]: list of documents(page_content, metadata={'source', 'page'})
     """
-    return file.read().decode(errors='replace')
+    documents = [Document(
+        page_content=file.read().decode(errors='replace'),
+        metadata={
+            'source': source,
+            'page': 0,
+        }
+    )]
+    return documents
 
 
-def fu_get_content_pdf(file: io.BytesIO) -> str:
+def fu_get_content_pdf(file: io.BytesIO, source: str = '') -> list[Document]:
     """Reads PDF file contents
 
     Args:
         file (io.BytesIO): uploaded file object
+        source (str, optional): filename. Defaults to ''.
 
     Returns:
-        str: contents
+        list[Document]: list of documents(page_content, metadata={'source', 'page'})
     """
-    text = ''
+    documents = []
     loader = PdfReader(file)
-    for chunk in loader.pages: text += chunk.extract_text()
-    return text
+    for i, chunk in enumerate(loader.pages):
+        documents.append(Document(
+            page_content=chunk.extract_text(),
+            metadata={
+                'source': source,
+                'page': i,
+            }
+        ))
+    return documents
 
 
-def fu_get_content_odt(file: io.BytesIO) -> str:
+def fu_get_content_odt(file: io.BytesIO, source: str = '') -> list[Document]:
     """Reads ODT file contents
 
     Args:
         file (io.BytesIO): uploaded file object
+        source (str, optional): filename. Defaults to ''.
 
     Returns:
-        str: contents
+        list[Document]: list of documents(page_content, metadata={'source', 'page'})
     """    
-    text = ''
+    documents = []
     loader = odtload(file)
-    for chunk in loader.getElementsByType(odfText.P): text += chunk.firstChild.data + '\n'
-    return text
+    for i, chunk in enumerate(loader.getElementsByType(odfText.P)):
+        documents.append(Document(
+            page_content=chunk.firstChild.data,
+            metadata={
+                'source': source,
+                'page': i,
+            }
+        ))
+    return documents
 
 
-def fu_get_content_docx(file: io.BytesIO) -> str:
+def fu_get_content_docx(file: io.BytesIO, source: str = '') -> list[Document]:
     """Reads DOCX file contents
 
     Args:
         file (io.BytesIO): uploaded file object
+        source (str, optional): filename. Defaults to ''.
 
     Returns:
-        str: contents
+        list[Document]: list of documents(page_content, metadata={'source', 'page'})
     """
-    text = ''
+    documents = []
     loader = docx.Document(file)
-    for chunk in loader.paragraphs: text += chunk.text + '\n'
-    return text
+    for i, chunk in enumerate(loader.paragraphs): 
+        documents.append(Document(
+            page_content=chunk.text,
+            metadata={
+                'source': source,
+                'page': i,
+            }
+        ))
+    return documents
 
 
