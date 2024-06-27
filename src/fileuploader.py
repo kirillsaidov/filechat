@@ -76,7 +76,7 @@ def fu_get_content_txt(file: io.BytesIO) -> str:
     Returns:
         str: contents
     """
-    return file.read().decode()
+    return file.read().decode(errors='replace')
 
 
 def fu_get_content_pdf(file: io.BytesIO) -> str:
