@@ -89,7 +89,7 @@ if __name__ == '__main__':
         
         # flags
         flag_load_from_folder = st.toggle('Load from folder', help='Drag & drop files or load from folder.')
-        flag_private_chat = st.toggle('Private chat', help='Do not save files to database for repeated usage.')
+        flag_private_chat = st.toggle('Private chat', help='Do not save files to database for repeated usage.', disabled=True)
         flag_ask_llm = st.toggle('Ask LLM', help='Ask LLM not the knowledge base.')
         
         # cache
