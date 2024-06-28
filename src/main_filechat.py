@@ -10,20 +10,24 @@ import argparse
 import streamlit as st
 
 # local
-from chromadb import *
+from storage import *
 from fileuploader import *
 
         
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--chromadb', help='path to chromadb with name', default='chroma', type=str)
+    parser.add_argument('--mongo_connect', help='mongo connect url', default='mongodb://localhost:27017/', type=str)
+    parser.add_argument('--mongo_dbname', help='mongo database name', default='filechat', type=str)
+    parser.add_argument('--mongo_colname', help='mongo collection name', default='documents', type=str)
     parser.add_argument('--ollama_model', help='ollama model name', default='llama3', type=str)
     parser.add_argument('--ollama_base_url', help='ollama url:port', default='http://localhost:11434', type=str)
     parser.add_argument('--verbose', help='verbose output', action='store_true')
     args = parser.parse_args()
     
     # setup
-    chromadb = args.chromadb
+    mongo_connect = args.mongo_connect
+    mongo_dbname = args.mongo_dbname
+    mongo_colname = args.mongo_colname
     ollama_model = args.ollama_model
     ollama_base_url = args.ollama_base_url
     verbose = args.verbose
@@ -50,7 +54,7 @@ if __name__ == '__main__':
         st.markdown('''
         # Cache
         ''')
-        if st.button('Clear database', use_container_width=True, on_click=chromadb_clear_database):
+        if st.button('Clear database', use_container_width=True, on_click=storage_clear_database, args=(mongo_connect, mongo_dbname)):
             widget = st.success('Database cleared!', icon='✅')
             time.sleep(2)
             widget.empty()
@@ -88,11 +92,11 @@ if __name__ == '__main__':
     
         # process documents
         documents = fu_split_documents(documents)
-        docs_added = chromadb_add_documents(
+        docs_added = storage_add_documents(
             documents=documents,
-            path=chromadb,
-            model=ollama_model,
-            base_url=ollama_base_url,
+            mongo_connect=mongo_connect,
+            mongo_dbname=mongo_dbname,
+            mongo_colname=mongo_colname,
             verbose=verbose,
         )
         
