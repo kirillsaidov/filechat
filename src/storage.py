@@ -6,7 +6,11 @@ import shutil
 
 # db
 import pymongo
+
+# langchain
 from langchain.schema import Document
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import OllamaEmbeddings
 
 # local
 from log import log_print
@@ -94,5 +98,21 @@ def storage_clear_database(mongo_connect: str = 'mongodb://localhost:27017/', mo
     """
     db = pymongo.MongoClient(mongo_connect)
     db.drop_database(mongo_dbname)
+
+
+def storage_get_all_documents(mongo_connect: str = 'mongodb://localhost:27017/', mongo_dbname: str = 'filechat', mongo_colname: str = 'documents') -> list[Document]:
+    # init storage
+    db = pymongo.MongoClient(mongo_connect)
+    dbcol = db[mongo_dbname][mongo_colname]
+    
+    # retreive documents
+    dicts = dbcol.find({}, {'_id':0})
+    documents = storage_dict_to_documents(dicts)
+    
+    return documents
+
+
+def storage_load_vectorstore(documents: list[Document], embedding: OllamaEmbeddings) -> FAISS:
+    return FAISS.from_documents(documents, embedding)
 
 
