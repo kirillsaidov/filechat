@@ -1,9 +1,5 @@
 # module storage
 
-# system
-import os
-import shutil
-
 # db
 import pymongo
 
@@ -14,7 +10,6 @@ from langchain_community.embeddings import OllamaEmbeddings
 
 # local
 from log import log_print
-from llm import llm_get_embedding_function
 from fileuploader import fu_calculate_document_ids
 
 

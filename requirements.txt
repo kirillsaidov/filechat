@@ -6,3 +6,5 @@ pypandoc==1.13
 odfpy==1.4.1
 PyPDF2==3.0.1
 faiss-cpu==1.8.0.post1
+pymongo==4.8.0
+ollama==0.2.1
