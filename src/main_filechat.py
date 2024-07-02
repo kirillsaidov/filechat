@@ -31,9 +31,9 @@ Answer the question based only on the following context:
 
 ---
 
-Answer the question based on the above context: {question}
+Question: {question}
 
-If no context or context is insufficient, give the following answer: Insufficient context.
+If no context is provided or context is insufficient, give the following answer: Insufficient context.
 
 ONLY DIRECT ANSWERS. DO NOT ADD ANY COMMENTS OR EXPLANATIONS. NO NARRATOR OR AI ASSISTANT, DO NOT ADD ANY REFERENCE BOOK OR ACCOMPANYING INFORMATION. NO DISCLAIMERS, WARNINGS, OR RECOMMENDATIONS FOR USE.DO NOT ADD
 """
@@ -99,6 +99,7 @@ if __name__ == '__main__':
         ''')
         if st.button('Delete database', use_container_width=True, on_click=storage_clear_database, args=(mongo_connect, mongo_dbname)):
             st.session_state.vectorStore = None
+            if os.path.exists(VECTORSTORE_DB): os.remove(VECTORSTORE_DB)
             widget_info_notification('Database deleted!')
         if st.button('Delete messages', use_container_width=True, on_click=lambda: st.session_state.messages.clear()):
             widget_info_notification('Messages deleted!')
@@ -150,6 +151,7 @@ if __name__ == '__main__':
             
             # update vectorstore
             st.session_state.vectorStore = vectorstore_update(st.session_state.vectorStore, new_docs, ollama_model, ollama_base_url)
+            widget_info_notification(f'Library updated!')
         else: widget_info_notification(f'All up to date!')
     
     # ---
@@ -188,7 +190,7 @@ if __name__ == '__main__':
                 
             # invoke llm
             response = llm_model_chat(prompt, st.session_state.ollama_model)
-            st.markdown(prompt)
+            st.markdown(response)
         st.session_state.messages.append({'role': 'assistant', 'content': response})
 
 
