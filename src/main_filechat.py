@@ -20,6 +20,7 @@ from ollama import Client as OllamaClient
 from llm import *
 from widgets import *
 from storage import *
+from vectorstore import *
 from fileuploader import *
 
 
@@ -58,14 +59,14 @@ if __name__ == '__main__':
     supported_doctypes = ['pdf', 'docx', 'odt', 'txt']
         
     # init vectorstore
-    def vectorstore_load() -> FAISS | None:
-        documents = storage_get_all_documents(mongo_connect, mongo_dbname, mongo_colname)
-        return storage_load_vectorstore(
-            documents=documents,
-            embedding=llm_get_embedding_function(ollama_model, ollama_base_url),
-        ) if documents else None
     if 'vectorStore' not in st.session_state:
-        st.session_state.vectorStore = vectorstore_load()
+        st.session_state.vectorStore = vectorstore_load(
+            mongo_connect=mongo_connect,
+            mongo_dbname=mongo_dbname,
+            mongo_colname=mongo_colname,
+            ollama_model=ollama_model,
+            ollama_base_url=ollama_base_url,
+        )
     
     # init ollama
     if 'ollama_model' not in st.session_state:
@@ -97,6 +98,7 @@ if __name__ == '__main__':
         # Cache
         ''')
         if st.button('Delete database', use_container_width=True, on_click=storage_clear_database, args=(mongo_connect, mongo_dbname)):
+            st.session_state.vectorStore = None
             widget_info_notification('Database deleted!')
         if st.button('Delete messages', use_container_width=True, on_click=lambda: st.session_state.messages.clear()):
             widget_info_notification('Messages deleted!')
@@ -134,7 +136,7 @@ if __name__ == '__main__':
     
         # process documents
         documents = fu_split_documents(documents, chunk_size=1000, chunk_overlap=200)
-        docs_added = storage_add_documents(
+        new_docs = storage_add_documents(
             documents=documents,
             mongo_connect=mongo_connect,
             mongo_dbname=mongo_dbname,
@@ -143,11 +145,11 @@ if __name__ == '__main__':
         )
         
         # display number of documents added
-        if docs_added:
-            widget_info_notification(f'{docs_added} chunks added!')
+        if new_docs:
+            widget_info_notification(f'{len(new_docs)} chunks added!')
             
             # update vectorstore
-            st.session_state.vectorStore = vectorstore_load()
+            st.session_state.vectorStore = vectorstore_update(st.session_state.vectorStore, new_docs, ollama_model, ollama_base_url)
         else: widget_info_notification(f'All up to date!')
     
     # ---

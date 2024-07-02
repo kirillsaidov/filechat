@@ -43,7 +43,7 @@ def storage_add_documents(
     mongo_dbname: str = 'filechat',
     mongo_colname: str = 'documents', 
     verbose: bool = True,
-) -> int:
+) -> int | list[Document]:
     """Adds documents to database
 
     Args:
@@ -54,7 +54,7 @@ def storage_add_documents(
         verbose (bool, optional): verbose output. Defaults to True.
         
     Returns:
-        int: number of documents added
+        list[Document]: list of new documents added
     """    
     # init storage
     db = pymongo.MongoClient(mongo_connect)
@@ -81,7 +81,7 @@ def storage_add_documents(
     else:
         if verbose: log_print('✅ No new documents to add')
     
-    return len(new_documents)
+    return new_documents
 
 
 def storage_clear_database(mongo_connect: str = 'mongodb://localhost:27017/', mongo_dbname: str = 'filechat'):
