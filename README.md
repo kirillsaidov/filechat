@@ -4,6 +4,8 @@ Chat with files using LLM. Supports the following document types:
 * Open Document (ODT)
 * Portable Document Format (PDF)
 * Plain Text (TXT)
+  
+<img src="imgs/screenshot.png" width="720">
 
 ## Install
 ```sh
